@@ -17,6 +17,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -136,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val mediaStoreOutputOptions = MediaStoreOutputOptions
-            .Builder(contentResolver, MediaStore.Video.Media.INTERNAL_CONTENT_URI)
+            .Builder(contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
             .setContentValues(contentValues)
             .build()
 
@@ -199,7 +200,12 @@ class MainActivity : AppCompatActivity() {
                 }
 
             val recorder = Recorder.Builder()
-                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+                .setQualitySelector(
+                    QualitySelector.from(
+                        Quality.HIGHEST,
+                        FallbackStrategy.higherQualityOrLowerThan(Quality.SD)
+                    )
+                )
                 .build()
 
             videoCapture = VideoCapture.withOutput(recorder)
@@ -208,7 +214,9 @@ class MainActivity : AppCompatActivity() {
             // Select back camera as default
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-            imageCapture = ImageCapture.Builder().build()
+
+            imageCapture = ImageCapture.Builder()
+                .build()
 
             // Image Analyzer
             val imageAnalyzer = ImageAnalysis.Builder()
@@ -224,12 +232,12 @@ class MainActivity : AppCompatActivity() {
                 // unbind use cases before rebinding
                 cameraProvider.unbindAll()
                 // Bind use cases to camera
-                cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, imageAnalyzer
-                )
 //                cameraProvider.bindToLifecycle(
-//                    this, cameraSelector, preview, videoCapture
+//                    this, cameraSelector, preview, imageCapture, imageAnalyzer
 //                )
+                cameraProvider.bindToLifecycle(
+                    this, cameraSelector, preview, imageCapture, videoCapture
+                )
 
 
             } catch (exc: Exception) {
@@ -301,6 +309,3 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
-
-/*
- */
